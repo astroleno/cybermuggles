@@ -13,8 +13,6 @@ const nextConfig = {
       },
     ]
   },
-  // 添加 Serverless Function 配置
-  serverless: true,
 }
 
 module.exports = nextConfig 

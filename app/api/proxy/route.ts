@@ -5,8 +5,8 @@ import type { IncomingMessage } from 'http';
 // Remove edge runtime
 // export const runtime = 'edge';
 
-export async function POST(req: NextRequest) {
-  return new Promise((resolve) => {
+export async function POST(req: NextRequest): Promise<Response> {
+  return new Promise<Response>((resolve) => {
     const body = req.json();
     const apiKey = req.headers.get('Authorization');
 
