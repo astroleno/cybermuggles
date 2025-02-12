@@ -1,52 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { NextResponse } from 'next/server';
 
-// 移除 edge runtime
-// export const runtime = 'edge';
+export const runtime = 'edge';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const apiKey = req.headers.get('Authorization');
 
-    const response = await axios.post('http://124.222.75.42:4120/v1/chat/completions', body, {
+    const response = await fetch('http://124.222.75.42:4120/v1/chat/completions', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': apiKey || '',
         'Accept': 'text/event-stream',
       },
-      responseType: 'stream'
+      body: JSON.stringify(body),
     });
 
-    // 转换 axios 的流响应为 Web 标准的 ReadableStream
-    const stream = new ReadableStream({
-      start(controller) {
-        response.data.on('data', (chunk: Buffer) => {
-          controller.enqueue(chunk);
-        });
-        response.data.on('end', () => {
-          controller.close();
-        });
-        response.data.on('error', (err: Error) => {
-          controller.error(err);
-        });
-      },
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      });
+      return new Response(
+        JSON.stringify({
+          error: 'API Error',
+          message: `${response.status} ${response.statusText}`,
+          details: errorText
+        }),
+        {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    }
 
-    return new Response(stream, {
+    return new Response(response.body, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-      },
+      }
     });
   } catch (error) {
     console.error('Proxy error:', error);
     return NextResponse.json(
-      { 
-        error: 'Proxy error', 
-        message: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : undefined
+      {
+        error: 'Proxy error',
+        message: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

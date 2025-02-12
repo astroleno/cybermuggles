@@ -13,6 +13,14 @@ const nextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/proxy',
+        destination: 'http://124.222.75.42:4120/v1/chat/completions'
+      }
+    ]
+  },
   // 添加 Serverless Function 配置
   serverless: true,
 }
