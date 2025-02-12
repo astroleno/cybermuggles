@@ -10,53 +10,6 @@ interface MessageListProps {
   currentResponse: string;
 }
 
-const MarkdownWithHtml = ({ content }: { content: string }) => {
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
-
-  // 如果内容包含markdown-body类，需要特殊处理
-  if (content.includes('markdown-body')) {
-    const parts = content.split('<div class="markdown-body">');
-    const [htmlPart, markdownPart] = parts;
-    const cleanMarkdown = markdownPart.split('</div>')[0].trim();
-
-    return (
-      <>
-        <div className="thinking-section">
-          <div 
-            className="flex items-center cursor-pointer mb-2 hover:bg-gray-800 rounded p-1"
-            onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-          >
-            <span className="text-sm text-foreground/80">思考过程</span>
-            {isThinkingExpanded ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            )}
-          </div>
-          <div className={`transition-all duration-300 ${
-            isThinkingExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
-          }`}>
-            <div dangerouslySetInnerHTML={{ __html: htmlPart }} />
-          </div>
-        </div>
-        <div className="prose prose-invert max-w-none whitespace-pre-wrap mt-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {cleanMarkdown}
-          </ReactMarkdown>
-        </div>
-      </>
-    );
-  }
-
-  // 对于纯HTML内容，直接渲染
-  return (
-    <div 
-      className="prose prose-invert max-w-none whitespace-pre-wrap"
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
-  );
-};
-
 export function MessageList({ messages, currentThinking, currentResponse }: MessageListProps) {
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   
