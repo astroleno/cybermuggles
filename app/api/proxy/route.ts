@@ -6,8 +6,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body = await req.json();
     const apiKey = req.headers.get('Authorization');
+    const apiUrl = `http://${process.env.API_HOST || 'aitoshuu.art'}:${process.env.API_PORT || '4120'}${process.env.API_PATH || '/v1/chat/completions'}`;
+    
+    console.log('Attempting to fetch from:', apiUrl);
 
-    const response = await fetch(`http://${process.env.API_HOST || 'aitoshuu.art'}${process.env.API_PATH || '/v1/chat/completions'}`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,21 +22,29 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', {
+      const errorDetails = {
         status: response.status,
         statusText: response.statusText,
-        errorText
-      });
+        url: apiUrl,
+        errorText,
+        headers: Object.fromEntries(response.headers.entries())
+      };
+      console.error('API Error:', errorDetails);
+      
       return new Response(
         JSON.stringify({
           error: 'API Error',
           message: `${response.status} ${response.statusText}`,
-          details: errorText
+          details: errorText,
+          requestUrl: apiUrl
         }),
         {
           status: response.status,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
           }
         }
       );
@@ -48,6 +59,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       }
     });
   } catch (error) {
@@ -55,14 +69,30 @@ export async function POST(req: NextRequest): Promise<Response> {
     return new Response(
       JSON.stringify({
         error: 'Proxy error',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       }),
       {
         status: 500,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
         }
       }
     );
   }
+}
+
+// 添加 OPTIONS 处理以支持 CORS 预检请求
+export async function OPTIONS() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 } 
