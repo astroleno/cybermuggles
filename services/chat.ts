@@ -7,13 +7,14 @@ export const sendMessage = async (
   onChunk: (chunk: StreamChunk) => void
 ) => {
   try {
-    // 使用相对路径，通过 Next.js 的 rewrite 功能转发请求
-    const apiUrl = '/api';
+    // 确保使用 HTTP
+    const apiUrl = config.apiUrl.replace('https://', 'http://');
     console.log('Sending request to:', apiUrl);
 
     const response = await fetch(`${apiUrl}/v1/chat/completions`, {
       method: 'POST',
       mode: 'cors',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
