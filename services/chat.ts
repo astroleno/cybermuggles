@@ -7,14 +7,12 @@ export const sendMessage = async (
   onChunk: (chunk: StreamChunk) => void
 ) => {
   try {
-    // 确保使用 HTTP
-    const apiUrl = config.apiUrl.replace('https://', 'http://');
+    // 使用我们的代理端点
+    const apiUrl = '/api/proxy';
     console.log('Sending request to:', apiUrl);
 
-    const response = await fetch(`${apiUrl}/v1/chat/completions`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
