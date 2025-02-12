@@ -156,7 +156,7 @@ export function ConfigForm({ onSubmit }: ConfigFormProps) {
                   onChange={(e) => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="输入API Key"
                   className="pr-10 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-400 focus:ring-zinc-700"
-                  style={{ WebkitTextSecurity: showApiKey ? 'none' : 'disc' }}
+                  style={{ WebkitTextSecurity: showApiKey ? 'none' : 'disc' } as React.CSSProperties}
                   autoComplete="new-password"
                   disabled={isConfigured}
                 />
