@@ -7,7 +7,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const body = await req.json();
     const apiKey = req.headers.get('Authorization');
 
-    const response = await fetch(`http://${process.env.API_HOST || '124.222.75.42'}:${process.env.API_PORT || '4120'}${process.env.API_PATH || '/v1/chat/completions'}`, {
+    const response = await fetch(`http://${process.env.API_HOST || 'aitoshuu.art'}${process.env.API_PATH || '/v1/chat/completions'}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
