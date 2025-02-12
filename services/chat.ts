@@ -9,9 +9,11 @@ export const sendMessage = async (
   try {
     const response = await fetch(`${config.apiUrl}/v1/chat/completions`, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Accept': 'text/event-stream'
       },
       body: JSON.stringify({
         model: config.modelName,
@@ -21,12 +23,18 @@ export const sendMessage = async (
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      });
+      throw new Error(`API请求失败: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('No reader available');
+      throw new Error('无法读取响应流');
     }
 
     const decoder = new TextDecoder();
@@ -62,11 +70,12 @@ export const sendMessage = async (
           }
         } catch (e) {
           console.error('Error parsing line:', e);
+          console.error('Problematic line:', trimmedLine);
         }
       }
     }
   } catch (error) {
-    console.error('Error in chat service:', error);
-    throw error;
+    console.error('Chat service error:', error);
+    throw new Error(error instanceof Error ? error.message : '与API通信时发生错误');
   }
 }; 
