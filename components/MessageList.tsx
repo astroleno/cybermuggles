@@ -1,0 +1,86 @@
+import { Message } from '@/lib/types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
+interface MessageListProps {
+  messages: Message[];
+}
+
+const MarkdownWithHtml = ({ content }: { content: string }) => {
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(true);
+
+  // 如果内容包含markdown-body类，需要特殊处理
+  if (content.includes('markdown-body')) {
+    const parts = content.split('<div class="markdown-body">');
+    const [htmlPart, markdownPart] = parts;
+    const cleanMarkdown = markdownPart.split('</div>')[0].trim();
+
+    return (
+      <>
+        <div className="thinking-section">
+          <div 
+            className="flex items-center cursor-pointer mb-2"
+            onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+          >
+            <span className="text-sm text-foreground/80">思考过程</span>
+            {isThinkingExpanded ? (
+              <ChevronUp className="ml-2 h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-2 h-4 w-4" />
+            )}
+          </div>
+          <div className={`transition-all duration-300 ${
+            isThinkingExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+          }`}>
+            <div dangerouslySetInnerHTML={{ __html: htmlPart }} />
+          </div>
+        </div>
+        <div className="prose prose-invert max-w-none whitespace-pre-wrap mt-4">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {cleanMarkdown}
+          </ReactMarkdown>
+        </div>
+      </>
+    );
+  }
+
+  // 对于纯HTML内容，直接渲染
+  return (
+    <div 
+      className="prose prose-invert max-w-none whitespace-pre-wrap"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+};
+
+export function MessageList({ messages }: MessageListProps) {
+  return (
+    <div className="flex flex-col space-y-4 p-4">
+      {messages.map((message, index) => {
+        if (message.role === 'user') {
+          return (
+            <div key={index} className="flex justify-end">
+              <div className="max-w-[80%] rounded-lg p-4 user-message">
+                <div className="text-white">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={index} className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg p-4 message-bubble">
+              <MarkdownWithHtml content={message.content} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+} 
