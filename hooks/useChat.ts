@@ -18,10 +18,9 @@ export const useChat = (config: ChatConfig) => {
       
       // 添加用户消息
       const userMessage: Message = { role: 'user', content };
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => [...prev.filter(msg => msg.role !== 'assistant' || !msg.isTemp), userMessage]);
 
       let rawContent = '';
-      let assistantMessage: Message | null = null;
 
       // 发送消息
       await sendMessage([...messages, userMessage], config, (chunk) => {
@@ -42,35 +41,17 @@ export const useChat = (config: ChatConfig) => {
           setCurrentThinking(thinkingPart.trim());
           setCurrentResponse(outputPart.trim());
 
-          // 如果还没有创建助手消息，创建一个
-          if (!assistantMessage) {
-            assistantMessage = { role: 'assistant', content: '' };
-            setMessages(prev => [...prev, assistantMessage!]);
+          // 当完整响应接收完毕时，将其添加到消息历史
+          if (!outputPart.trim().endsWith('...')) {
+            const assistantMessage: Message = {
+              role: 'assistant',
+              content: outputPart.trim(),
+              isTemp: false
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+            setCurrentThinking('');
+            setCurrentResponse('');
           }
-
-          // 确保输出部分的markdown换行正确（使用两个空格加换行）
-          const formattedOutput = outputPart.trim()
-            .split('\n')
-            .map(line => line.trim())
-            .join('  \n');
-
-          // 格式化内容：思考部分用绿色显示，输出部分包装在markdown-body中
-          const formattedContent = `
-<div style="color: #6a8d52" class="thinking-content">${thinkingPart.trim()}</div>
-
-<div class="markdown-body">
-${formattedOutput}
-</div>`;
-
-          // 更新消息
-          setMessages(prev => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage.role === 'assistant') {
-              lastMessage.content = formattedContent;
-            }
-            return newMessages;
-          });
         } else {
           // 在收到分隔符之前，更新思考过程
           setCurrentThinking(rawContent);

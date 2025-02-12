@@ -2,6 +2,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   reasoning_content?: string;
+  isTemp?: boolean;
 }
 
 export interface ChatConfig {
