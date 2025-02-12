@@ -1,0 +1,15 @@
+[build]
+command = "npm run build"
+[build.upload]
+format = "service-worker"
+
+[site]
+bucket = "./out"
+entry-point = "workers-site"
+
+[env.production]
+name = "cybermuggles"
+route = "cybermuggles.pages.dev/*"
+
+[env.production.vars]
+NODE_VERSION = "18.18.0" 
