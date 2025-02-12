@@ -7,7 +7,11 @@ export const sendMessage = async (
   onChunk: (chunk: StreamChunk) => void
 ) => {
   try {
-    const response = await fetch(`${config.apiUrl}/v1/chat/completions`, {
+    // 确保使用 HTTP
+    const apiUrl = config.apiUrl.replace('https://', 'http://');
+    console.log('Sending request to:', apiUrl);
+
+    const response = await fetch(`${apiUrl}/v1/chat/completions`, {
       method: 'POST',
       mode: 'cors',
       headers: {
@@ -27,7 +31,8 @@ export const sendMessage = async (
       console.error('API Error:', {
         status: response.status,
         statusText: response.statusText,
-        errorText
+        errorText,
+        url: apiUrl
       });
       throw new Error(`API请求失败: ${response.status} ${response.statusText}\n${errorText}`);
     }
@@ -76,6 +81,9 @@ export const sendMessage = async (
     }
   } catch (error) {
     console.error('Chat service error:', error);
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error('无法连接到API服务器，请确保服务器正在运行且可访问');
+    }
     throw new Error(error instanceof Error ? error.message : '与API通信时发生错误');
   }
 }; 
