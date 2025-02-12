@@ -1,59 +1,121 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { Readable } from 'stream';
 
-export const runtime = 'edge';
+// Remove edge runtime
+// export const runtime = 'edge';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+export async function POST(req: NextRequest) {
+  return new Promise((resolve) => {
+    const body = req.json();
     const apiKey = req.headers.get('Authorization');
 
-    const response = await fetch('http://124.222.75.42:4120/v1/chat/completions', {
+    const options = {
+      hostname: process.env.API_HOST || '124.222.75.42',
+      port: parseInt(process.env.API_PORT || '4120'),
+      path: process.env.API_PATH || '/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': apiKey || '',
         'Accept': 'text/event-stream',
       },
-      body: JSON.stringify(body),
+      timeout: 30000, // 30 seconds timeout
+    };
+
+    const proxyReq = require('http').request(options, (proxyRes: any) => {
+      if (proxyRes.statusCode !== 200) {
+        let data = '';
+        proxyRes.on('data', (chunk: Buffer) => {
+          data += chunk;
+        });
+        proxyRes.on('end', () => {
+          resolve(new Response(data, {
+            status: proxyRes.statusCode,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }));
+        });
+        return;
+      }
+
+      const headers = new Headers({
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+
+      // Convert Node.js readable stream to Web API readable stream
+      const stream = new ReadableStream({
+        start(controller) {
+          proxyRes.on('data', (chunk: Buffer) => {
+            controller.enqueue(chunk);
+          });
+          proxyRes.on('end', () => {
+            controller.close();
+          });
+          proxyRes.on('error', (err: Error) => {
+            controller.error(err);
+          });
+        },
+      });
+
+      resolve(new Response(stream, { headers }));
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText
-      });
-      return new Response(
+    proxyReq.on('error', (error: Error) => {
+      console.error('Proxy error:', error);
+      resolve(new Response(
         JSON.stringify({
-          error: 'API Error',
-          message: `${response.status} ${response.statusText}`,
-          details: errorText
+          error: 'Proxy error',
+          message: error.message,
+          details: error.stack
         }),
-        {
-          status: response.status,
+        { 
+          status: 500,
           headers: {
             'Content-Type': 'application/json'
           }
         }
-      );
-    }
-
-    return new Response(response.body, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      }
+      ));
     });
-  } catch (error) {
-    console.error('Proxy error:', error);
-    return NextResponse.json(
-      {
-        error: 'Proxy error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+
+    // Set request timeout
+    proxyReq.setTimeout(30000, () => {
+      proxyReq.destroy();
+      resolve(new Response(
+        JSON.stringify({
+          error: 'Timeout error',
+          message: 'Request timed out after 30 seconds'
+        }),
+        { 
+          status: 504,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      ));
+    });
+
+    // Send the request body
+    body.then(data => {
+      proxyReq.write(JSON.stringify(data));
+      proxyReq.end();
+    }).catch(error => {
+      console.error('Error parsing request body:', error);
+      resolve(new Response(
+        JSON.stringify({
+          error: 'Request error',
+          message: 'Failed to parse request body',
+          details: error.message
+        }),
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      ));
+    });
+  });
 } 
