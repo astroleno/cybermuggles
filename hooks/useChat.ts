@@ -46,20 +46,20 @@ export const useChat = (config: ChatConfig) => {
             setIsThinkingComplete(true);
             isFirstResponse = false;
           }
+          
+          // 更新响应内容
           setCurrentResponse(outputPart.trim());
-
-          // 当完整响应接收完毕时，将其添加到消息历史
-          if (!outputPart.trim().endsWith('...')) {
-            const assistantMessage: Message = {
-              role: 'assistant',
-              content: outputPart.trim(),
-              isTemp: false
-            };
-            setMessages(prev => [...prev, assistantMessage]);
-            setCurrentThinking('');
-            setCurrentResponse('');
-            setIsThinkingComplete(false);
-          }
+          
+          // 不再将响应添加到消息历史中
+          // 移除这部分代码，这样就不会创建新的对话框
+          // if (!outputPart.trim().endsWith('...')) {
+          //   const assistantMessage: Message = {
+          //     role: 'assistant',
+          //     content: outputPart.trim(),
+          //     isTemp: false
+          //   };
+          //   setMessages(prev => [...prev, assistantMessage]);
+          // }
         } else {
           // 在收到分隔符之前，更新思考过程
           setCurrentThinking(rawContent);

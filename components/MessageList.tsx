@@ -1,8 +1,6 @@
 import { Message } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MessageListProps {
   messages: Message[];
@@ -12,15 +10,6 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, currentThinking, currentResponse, isThinkingComplete = false }: MessageListProps) {
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(true);
-  
-  // 当思考完成时，自动折叠
-  useEffect(() => {
-    if (isThinkingComplete) {
-      setIsThinkingExpanded(false);
-    }
-  }, [isThinkingComplete]);
-
   return (
     <div className="flex flex-col space-y-4 p-4">
       {messages.map((message, index) => (
@@ -36,45 +25,29 @@ export function MessageList({ messages, currentThinking, currentResponse, isThin
       ))}
       
       {(currentThinking || currentResponse) && (
-        <div className="flex flex-col space-y-4">
-          {currentThinking && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg p-4 message-bubble">
-                <div className="thinking-section">
-                  <div 
-                    className="flex items-center cursor-pointer mb-2 hover:bg-gray-800 rounded p-1"
-                    onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-                  >
-                    <span className="text-sm text-foreground/80">思考过程</span>
-                    {isThinkingExpanded ? (
-                      <ChevronUp className="ml-2 h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    )}
-                  </div>
-                  <div className={`transition-all duration-300 ${
-                    isThinkingExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
-                  }`}>
-                    <div style={{ color: '#6a8d52' }} className="thinking-content">
-                      {currentThinking}
-                    </div>
+        <div className="flex justify-start">
+          <div className="max-w-[80%] rounded-lg p-4 message-bubble">
+            <div className="flex flex-col space-y-4">
+              {currentThinking && (
+                <div className="thinking-section border-b border-gray-700 pb-4">
+                  <div className="text-sm text-foreground/80 mb-2">推理思考过程</div>
+                  <div style={{ color: '#6a8d52' }} className="thinking-content whitespace-pre-wrap">
+                    {currentThinking}
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {currentResponse && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg p-4 message-bubble">
-                <div className="prose prose-invert max-w-none whitespace-pre-wrap">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {currentResponse}
-                  </ReactMarkdown>
+              )}
+              
+              {currentResponse && (
+                <div className="response-section">
+                  <div className="prose prose-invert max-w-none whitespace-pre-wrap">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentResponse}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

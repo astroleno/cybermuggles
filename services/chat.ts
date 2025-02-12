@@ -43,14 +43,13 @@ export const sendMessage = async (
 
     const decoder = new TextDecoder();
     let buffer = '';
+    let isThinking = false;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
-      console.log('Raw chunk:', chunk);
-
       buffer += chunk;
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
@@ -60,21 +59,28 @@ export const sendMessage = async (
         if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
 
         try {
-          console.log('Processing line:', trimmedLine);
           const data = JSON.parse(trimmedLine.replace(/^data: /, ''));
-          console.log('Parsed data:', data);
-
+          
           if (data.choices?.[0]?.delta?.content) {
             const content = data.choices[0].delta.content;
-            console.log('Content:', content);
+            
+            // 检查是否包含思考标记
+            if (content.includes('<think>')) {
+              isThinking = true;
+            } else if (content.includes('</think>')) {
+              isThinking = false;
+            }
+            
+            // 发送处理后的内容
             onChunk({
-              type: content.includes('<think>') ? 'thinking' : 'response',
+              type: isThinking ? 'thinking' : 'response',
               content: content
+                .replace(/<\/?think>/g, '')
+                .replace(/【，】/g, '')
             });
           }
         } catch (e) {
           console.error('Error parsing line:', e);
-          console.error('Problematic line:', trimmedLine);
         }
       }
     }

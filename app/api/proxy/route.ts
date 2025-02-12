@@ -2,21 +2,68 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`Retrying... ${retries} attempts left`);
+      await delay(RETRY_DELAY);
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body = await req.json();
     const apiKey = req.headers.get('Authorization');
-    const apiUrl = `http://${process.env.API_HOST || 'aitoshuu.art'}:${process.env.API_PORT || '4120'}${process.env.API_PATH || '/v1/chat/completions'}`;
     
-    console.log('Attempting to fetch from:', apiUrl);
+    // 验证请求体
+    if (!body || !body.messages || !Array.isArray(body.messages)) {
+      throw new Error('Invalid request body format');
+    }
 
-    const response = await fetch(apiUrl, {
+    // 获取并验证环境变量
+    const apiHost = process.env.API_HOST;
+    const apiPort = process.env.API_PORT;
+    const apiPath = process.env.API_PATH;
+
+    if (!apiHost || !apiPort || !apiPath) {
+      console.error('Missing environment variables:', { apiHost, apiPort, apiPath });
+      throw new Error('Missing required environment variables');
+    }
+
+    const apiUrl = `http://${apiHost}:${apiPort}${apiPath}`;
+    
+    console.log('Proxy configuration:', {
+      host: apiHost,
+      port: apiPort,
+      path: apiPath,
+      url: apiUrl,
+      messageCount: body.messages.length
+    });
+
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': apiKey || '',
+      'Accept': 'text/event-stream',
+    };
+
+    console.log('Making request with headers:', Object.fromEntries(Object.entries(requestHeaders).map(([k, v]) => [k, v.length > 50 ? v.substring(0, 50) + '...' : v])));
+
+    const response = await fetchWithRetry(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': apiKey || '',
-        'Accept': 'text/event-stream',
-      },
+      headers: requestHeaders,
       body: JSON.stringify(body),
     });
 
@@ -50,9 +97,18 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
+    if (!response.body) {
+      throw new Error('No response body received');
+    }
+
     // 使用 TransformStream 来处理流式响应
     const transformStream = new TransformStream();
-    response.body?.pipeTo(transformStream.writable);
+    
+    // 处理流式响应
+    response.body.pipeTo(transformStream.writable).catch(error => {
+      console.error('Stream processing error:', error);
+      throw error;
+    });
 
     return new Response(transformStream.readable, {
       headers: {
@@ -65,7 +121,12 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
     });
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('Proxy error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error
+    });
+    
     return new Response(
       JSON.stringify({
         error: 'Proxy error',
