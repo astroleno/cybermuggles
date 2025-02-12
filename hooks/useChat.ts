@@ -6,11 +6,15 @@ export const useChat = (config: ChatConfig) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentThinking, setCurrentThinking] = useState<string>('');
+  const [currentResponse, setCurrentResponse] = useState<string>('');
 
   const sendUserMessage = useCallback(async (content: string) => {
     try {
       setIsLoading(true);
       setError(null);
+      setCurrentThinking('');
+      setCurrentResponse('');
       
       // 添加用户消息
       const userMessage: Message = { role: 'user', content };
@@ -40,6 +44,9 @@ export const useChat = (config: ChatConfig) => {
           // 分割内容
           const [thinkingPart, outputPart] = rawContent.split(separator);
           
+          setCurrentThinking(thinkingPart.trim());
+          setCurrentResponse(outputPart.trim());
+
           // 确保输出部分的markdown换行正确（使用两个空格加换行）
           const formattedOutput = outputPart.trim()
             .split('\n')
@@ -71,6 +78,7 @@ ${formattedOutput}
           });
         } else {
           // 在收到分隔符之前，所有内容都显示为绿色（思考部分）
+          setCurrentThinking(rawContent);
           const formattedContent = `<div style="color: #6a8d52" class="thinking-content">${rawContent}</div>`;
           setMessages(prev => {
             const newMessages = [...prev];
@@ -95,6 +103,8 @@ ${formattedOutput}
     messages,
     isLoading,
     error,
+    currentThinking,
+    currentResponse,
     sendMessage: sendUserMessage
   };
 }; 
