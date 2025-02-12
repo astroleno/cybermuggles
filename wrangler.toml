@@ -10,6 +10,10 @@ entry-point = "workers-site"
 [env.production]
 name = "cybermuggles"
 route = "cybermuggles.pages.dev/*"
+compatibility_flags = ["nodejs_compat"]
+
+[env.preview]
+compatibility_flags = ["nodejs_compat"]
 
 [env.production.vars]
 NODE_VERSION = "18.18.0" 
