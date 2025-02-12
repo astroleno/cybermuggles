@@ -6,6 +6,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MessageListProps {
   messages: Message[];
+  currentThinking: string;
+  currentResponse: string;
 }
 
 const MarkdownWithHtml = ({ content }: { content: string }) => {
@@ -55,7 +57,7 @@ const MarkdownWithHtml = ({ content }: { content: string }) => {
   );
 };
 
-export function MessageList({ messages }: MessageListProps) {
+export function MessageList({ messages, currentThinking, currentResponse }: MessageListProps) {
   return (
     <div className="flex flex-col space-y-4 p-4">
       {messages.map((message, index) => {
@@ -81,6 +83,28 @@ export function MessageList({ messages }: MessageListProps) {
           </div>
         );
       })}
+      
+      {currentThinking && (
+        <div className="flex justify-start">
+          <div className="max-w-[80%] rounded-lg p-4 message-bubble">
+            <div style={{ color: '#6a8d52' }} className="thinking-content">
+              {currentThinking}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {currentResponse && (
+        <div className="flex justify-start">
+          <div className="max-w-[80%] rounded-lg p-4 message-bubble">
+            <div className="prose prose-invert max-w-none whitespace-pre-wrap">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {currentResponse}
+              </ReactMarkdown>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
