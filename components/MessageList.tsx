@@ -6,10 +6,9 @@ interface MessageListProps {
   messages: Message[];
   currentThinking: string;
   currentResponse: string;
-  isThinkingComplete?: boolean;
 }
 
-export function MessageList({ messages, currentThinking, currentResponse, isThinkingComplete = false }: MessageListProps) {
+export function MessageList({ messages, currentThinking, currentResponse }: MessageListProps) {
   return (
     <div className="flex flex-col space-y-4 p-4">
       {messages.map((message, index) => (
