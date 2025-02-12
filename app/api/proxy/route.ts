@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { Readable } from 'stream';
+import http from 'http';
+import type { IncomingMessage } from 'http';
 
 // Remove edge runtime
 // export const runtime = 'edge';
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       timeout: 30000, // 30 seconds timeout
     };
 
-    const proxyReq = require('http').request(options, (proxyRes: any) => {
+    const proxyReq = http.request(options, (proxyRes: IncomingMessage) => {
       if (proxyRes.statusCode !== 200) {
         let data = '';
         proxyRes.on('data', (chunk: Buffer) => {
