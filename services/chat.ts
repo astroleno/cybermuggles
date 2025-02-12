@@ -7,8 +7,8 @@ export const sendMessage = async (
   onChunk: (chunk: StreamChunk) => void
 ) => {
   try {
-    // 确保使用 HTTP
-    const apiUrl = config.apiUrl.replace('https://', 'http://');
+    // 使用相对路径，通过 Next.js 的 rewrite 功能转发请求
+    const apiUrl = '/api';
     console.log('Sending request to:', apiUrl);
 
     const response = await fetch(`${apiUrl}/v1/chat/completions`, {
