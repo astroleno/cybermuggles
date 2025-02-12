@@ -14,6 +14,7 @@ export function Chat() {
     error,
     currentThinking,
     currentResponse,
+    isThinkingComplete,
     sendMessage
   } = useChat(config || { apiUrl: '', modelName: '', apiKey: '' });
 
@@ -29,6 +30,7 @@ export function Chat() {
               messages={messages}
               currentThinking={currentThinking}
               currentResponse={currentResponse}
+              isThinkingComplete={isThinkingComplete}
             />
           </div>
           {error && (

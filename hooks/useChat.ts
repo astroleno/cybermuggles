@@ -8,6 +8,7 @@ export const useChat = (config: ChatConfig) => {
   const [error, setError] = useState<string | null>(null);
   const [currentThinking, setCurrentThinking] = useState<string>('');
   const [currentResponse, setCurrentResponse] = useState<string>('');
+  const [isThinkingComplete, setIsThinkingComplete] = useState(false);
 
   const sendUserMessage = useCallback(async (content: string) => {
     try {
@@ -15,12 +16,14 @@ export const useChat = (config: ChatConfig) => {
       setError(null);
       setCurrentThinking('');
       setCurrentResponse('');
+      setIsThinkingComplete(false);
       
       // 添加用户消息
       const userMessage: Message = { role: 'user', content };
-      setMessages(prev => [...prev.filter(msg => msg.role !== 'assistant' || !msg.isTemp), userMessage]);
+      setMessages(prev => [...prev, userMessage]);
 
       let rawContent = '';
+      let isFirstResponse = true;
 
       // 发送消息
       await sendMessage([...messages, userMessage], config, (chunk) => {
@@ -38,7 +41,11 @@ export const useChat = (config: ChatConfig) => {
           const [thinkingPart, outputPart] = rawContent.split(separator);
           
           // 更新当前思考和响应状态
-          setCurrentThinking(thinkingPart.trim());
+          if (isFirstResponse) {
+            setCurrentThinking(thinkingPart.trim());
+            setIsThinkingComplete(true);
+            isFirstResponse = false;
+          }
           setCurrentResponse(outputPart.trim());
 
           // 当完整响应接收完毕时，将其添加到消息历史
@@ -51,6 +58,7 @@ export const useChat = (config: ChatConfig) => {
             setMessages(prev => [...prev, assistantMessage]);
             setCurrentThinking('');
             setCurrentResponse('');
+            setIsThinkingComplete(false);
           }
         } else {
           // 在收到分隔符之前，更新思考过程
@@ -72,6 +80,7 @@ export const useChat = (config: ChatConfig) => {
     error,
     currentThinking,
     currentResponse,
+    isThinkingComplete,
     sendMessage: sendUserMessage
   };
 }; 

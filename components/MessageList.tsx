@@ -8,17 +8,18 @@ interface MessageListProps {
   messages: Message[];
   currentThinking: string;
   currentResponse: string;
+  isThinkingComplete?: boolean;
 }
 
-export function MessageList({ messages, currentThinking, currentResponse }: MessageListProps) {
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
+export function MessageList({ messages, currentThinking, currentResponse, isThinkingComplete = false }: MessageListProps) {
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(true);
   
-  // 当有新的思考内容时，默认折叠
+  // 当思考完成时，自动折叠
   useEffect(() => {
-    if (currentThinking) {
+    if (isThinkingComplete) {
       setIsThinkingExpanded(false);
     }
-  }, [currentThinking]);
+  }, [isThinkingComplete]);
 
   return (
     <div className="flex flex-col space-y-4 p-4">
